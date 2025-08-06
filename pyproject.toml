@@ -1,0 +1,12 @@
+[project]
+name = "artisan-engine"
+version = "0.1.0"
+description = "A Production grade, OpenAI-compatible API layer for local LLMs"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "llama-cpp-python>=0.3.14",
+    "numba>=0.61.2",
+    "outlines>=1.2.1",
+    "pydantic>=2.11.7",
+]
