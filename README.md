@@ -29,7 +29,7 @@ We are actively looking for contributors to help us build this future. See the "
 
 ### Key Features
 
-* **100% Reliability:** Don't just *prompt* for JSON, *enforce* it. Artisan uses grammar-based sampling to guarantee that the model's output will always be a syntactically correct JSON object that validates against your Pydantic schema.
+* **Guaranteed Structured Output:** Don't just *prompt* for JSON, *enforce* it. Artisan uses grammar-based sampling to guarantee that the model's output will always be a syntactically correct JSON object that validates against your Pydantic schema.
 * **OpenAI Compatibility:** Use the official `openai` client library you already know. Just change the `base_url`, and your existing code works.
 * **One-Command Deploy:** A single `docker-compose up` command downloads the model and starts the server.
 * **Language Agnostic:** Any service that can make an HTTP request (NodeJS, Go, Rust, Java, etc.) can use Artisan's power.
