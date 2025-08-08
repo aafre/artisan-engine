@@ -18,7 +18,7 @@ def extract_product_info():
     Demonstrates using the OpenAI-compatible /v1/chat/completions endpoint
     with a dynamically defined schema.
     """
-    print("\n--- 2. Testing OpenAI-Compatible /v1/chat/completions Endpoint ---")
+    print("--- 2. Testing OpenAI-Compatible /v1/chat/completions Endpoint ---")
 
     # 2. Point the official OpenAI client to your local Artisan server
     client = openai.OpenAI(
