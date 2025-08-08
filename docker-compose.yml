@@ -1,10 +1,6 @@
-# docker-compose.yml
-# Provides a one-command setup for Artisan Engine, including automatic model download.
-
-version: '3.8'
+# docker-compose.yml (Corrected)
 
 services:
-  # The Artisan Engine API Service
   artisan-engine:
     build:
       context: .
@@ -12,26 +8,22 @@ services:
     ports:
       - "8000:8000"
     environment:
-      # Point the engine to the model file inside the shared volume
       ARTISAN_MODEL_PATH: "/app/models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf"
-      # Set to false to pre-load the model on startup for better performance
       ARTISAN_MODEL_LAZY_LOADING: "false"
-      # Set to true to require a model at startup
       ARTISAN_REQUIRE_MODEL: "true"
     volumes:
       - model_cache:/app/models
-    # This service will only start after the downloader finishes successfully
     depends_on:
       model-downloader:
         condition: service_completed_successfully
     restart: unless-stopped
 
-  # NEW: Model Downloader Service
-  # This service runs once, downloads the model if it doesn't exist, and then exits.
   model-downloader:
     image: curlimages/curl:latest
+    user: root
     volumes:
       - model_cache:/app/models
+    # THE FIX: Corrected URL and removed unnecessary backslashes
     command: >
       sh -c "
         MODEL_FILE='/app/models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf'
@@ -46,7 +38,4 @@ services:
       "
 
 volumes:
-  # This named volume will persist the downloaded model file
-  # so you don't have to re-download it every time you start.
   model_cache:
-
