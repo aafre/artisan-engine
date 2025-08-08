@@ -55,6 +55,7 @@ class Config(BaseSettings):
     environment: str = Field(default="development", description="Environment name")
     debug: bool = Field(default=False, description="Debug mode")
     version: str = Field(default="0.1.0", description="API version")
+    require_model: bool = Field(default=True, description="Require model file to be present at startup")
 
     # Model configuration
     model: ModelConfig = Field(default_factory=ModelConfig)
@@ -140,13 +141,23 @@ def _apply_environment_overrides(config: Config) -> None:
     else:
         # Default model paths to check
         default_paths = [
+            "./models/*.gguf",  # Docker mount point
+            "./local_llms/*.gguf",  # Development directory
             "./Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf",
             "./Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
         ]
-        for path in default_paths:
-            if Path(path).exists():
-                config.model.path = Path(path)
-                break
+        for path_pattern in default_paths:
+            if "*" in str(path_pattern):
+                # Handle glob patterns
+                import glob
+                matches = glob.glob(str(path_pattern))
+                if matches:
+                    config.model.path = Path(matches[0])  # Use first match
+                    break
+            else:
+                if Path(path_pattern).exists():
+                    config.model.path = Path(path_pattern)
+                    break
 
     # Server configuration from environment
     if host := os.getenv("ARTISAN_SERVER_HOST"):
@@ -235,12 +246,22 @@ def get_model_paths() -> list[Path]:
         paths.append(config.model.path)
 
     # Add common default paths
-    default_paths = [
+    import glob
+    default_patterns = [
+        "./models/*.gguf",  # Docker mount point
+        "./local_llms/*.gguf",  # Development directory
         "./Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf",
         "./Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
-        "./models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf",
-        "./models/Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
     ]
+    
+    default_paths = []
+    for pattern in default_patterns:
+        if "*" in str(pattern):
+            # Expand glob patterns
+            matches = glob.glob(str(pattern))
+            default_paths.extend(matches)
+        else:
+            default_paths.append(pattern)
 
     for path_str in default_paths:
         path = Path(path_str)

@@ -21,6 +21,7 @@ from artisan_engine.adapter import LlamaCppAdapter
 from artisan_engine.config import find_model_file, get_config, setup_logging
 from artisan_engine.exceptions import (
     ArtisanEngineError,
+    ConfigurationError,
     GenerationError,
     ModelNotLoadedError,
     ValidationError,
@@ -62,9 +63,24 @@ async def lifespan(app: FastAPI):
     # Initialize adapter
     model_path = find_model_file()
     if not model_path:
-        # Don't fail startup, allow lazy loading
-        adapter = LlamaCppAdapter(lazy_loading=True)
-        logger.warning("No model file found - using lazy loading mode")
+        if config.require_model:
+            import sys
+            error_msg = (
+                "ERROR: No model file found! To run Artisan Engine, you need to provide a model file.\n\n"
+                "For Docker containers:\n"
+                "  docker run -p 8000:8000 -v /path/to/your/models:/app/models artisan-engine\n"
+                "  docker run -p 8000:8000 -e ARTISAN_MODEL_PATH=/app/model.gguf -v /path/to/model.gguf:/app/model.gguf artisan-engine\n\n"
+                "For local development:\n"
+                "  Set ARTISAN_MODEL_PATH environment variable\n"
+                "  Place model files in: ./local_llms/ or current directory\n\n"
+                "Supported model files: *.gguf (GGML/llama.cpp format)\n\n"
+                "To disable this check, set ARTISAN_REQUIRE_MODEL=false\n"
+            )
+            raise ConfigurationError(error_msg)
+        else:
+            # Don't fail startup, allow lazy loading
+            adapter = LlamaCppAdapter(lazy_loading=True)
+            logger.warning("No model file found - using lazy loading mode")
     else:
         adapter = LlamaCppAdapter(
             model_path=model_path,
