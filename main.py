@@ -22,6 +22,8 @@ from artisan_engine.config import find_model_file, get_config, setup_logging
 from artisan_engine.exceptions import (
     ArtisanEngineError,
     ConfigurationError,
+    ModelNotLoadedError,
+    ConfigurationError,
     GenerationError,
     ModelNotLoadedError,
     ValidationError,
