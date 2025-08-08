@@ -1,14 +1,17 @@
 import openai
 from pydantic import BaseModel, Field
-from typing import List
+
 
 # 1. Define your desired Pydantic schema, completely on the client-side.
 # The server does not need to know about this schema in advance.
 class Product(BaseModel):
-    product_id: str = Field(description="A unique identifier for the product, like a SKU.")
+    product_id: str = Field(
+        description="A unique identifier for the product, like a SKU."
+    )
     name: str = Field(description="The name of the product.")
-    tags: List[str] = Field(description="A list of relevant keywords or tags.")
+    tags: list[str] = Field(description="A list of relevant keywords or tags.")
     is_available: bool = Field(description="Whether the product is currently in stock.")
+
 
 def extract_product_info():
     """
@@ -20,7 +23,7 @@ def extract_product_info():
     # 2. Point the official OpenAI client to your local Artisan server
     client = openai.OpenAI(
         base_url="http://localhost:8000/v1",
-        api_key="not-needed"  # Can be any string
+        api_key="not-needed",  # Can be any string
     )
 
     prompt = (
@@ -36,8 +39,8 @@ def extract_product_info():
             messages=[{"role": "user", "content": prompt}],
             response_format={
                 "type": "json_object",
-                "json_schema": Product.model_json_schema()
-            }
+                "json_schema": Product.model_json_schema(),
+            },
         )
 
         # 4. The result is a guaranteed valid JSON string
@@ -52,6 +55,7 @@ def extract_product_info():
 
     except openai.APIError as e:
         print(f"An error occurred while calling the API: {e}")
+
 
 if __name__ == "__main__":
     extract_product_info()

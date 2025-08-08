@@ -112,61 +112,82 @@ class LlamaCppAdapter:
     def _filter_generation_params(self, **kwargs: Any) -> dict[str, Any]:
         """
         Filter generation parameters to only include those supported by llama-cpp-python.
-        
+
         Args:
             **kwargs: Raw generation parameters
-            
+
         Returns:
             Dictionary with only valid parameters
         """
         # Common llama-cpp-python generation parameters
         valid_params = {
-            'top_k', 'top_p', 'min_p', 'typical_p', 'temp', 'repeat_penalty',
-            'repeat_last_n', 'frequency_penalty', 'presence_penalty', 'tfs_z',
-            'mirostat_mode', 'mirostat_tau', 'mirostat_eta', 'stop',
-            'seed', 'logprobs', 'echo', 'stopping_criteria', 'logit_bias',
-            'grammar', 'max_tokens', 'temperature'  # Include the main ones too
+            "top_k",
+            "top_p",
+            "min_p",
+            "typical_p",
+            "temp",
+            "repeat_penalty",
+            "repeat_last_n",
+            "frequency_penalty",
+            "presence_penalty",
+            "tfs_z",
+            "mirostat_mode",
+            "mirostat_tau",
+            "mirostat_eta",
+            "stop",
+            "seed",
+            "logprobs",
+            "echo",
+            "stopping_criteria",
+            "logit_bias",
+            "grammar",
+            "max_tokens",
+            "temperature",  # Include the main ones too
         }
-        
+
         filtered = {}
         ignored = []
-        
+
         for key, value in kwargs.items():
             if key in valid_params:
                 filtered[key] = value
             else:
                 ignored.append(key)
-        
+
         if ignored:
             logger.debug(f"Ignoring unsupported generation parameters: {ignored}")
-            
+
         return filtered
 
-    def _ensure_pydantic_result(self, result: Any, schema: type[BaseModel]) -> BaseModel:
+    def _ensure_pydantic_result(
+        self, result: Any, schema: type[BaseModel]
+    ) -> BaseModel:
         """
         Ensure the generator result is a valid Pydantic model instance.
-        
+
         Args:
             result: The result from the outlines generator
             schema: The expected Pydantic model class
-            
+
         Returns:
             A validated Pydantic model instance
-            
+
         Raises:
             GenerationError: If the result cannot be converted to the expected schema
         """
         try:
             # Case 1: Already a Pydantic model of the correct type
             if isinstance(result, schema):
-                logger.debug(f"Generator returned correct Pydantic type: {type(result)}")
+                logger.debug(
+                    f"Generator returned correct Pydantic type: {type(result)}"
+                )
                 return result
-            
+
             # Case 2: It's a Pydantic model but different type - extract dict and convert
             elif isinstance(result, BaseModel):
                 logger.debug(f"Converting Pydantic model {type(result)} to {schema}")
                 return schema.model_validate(result.model_dump())
-            
+
             # Case 3: JSON string - parse to Pydantic object
             elif isinstance(result, str):
                 logger.debug(f"Converting JSON string to {schema}")
@@ -174,23 +195,26 @@ class LlamaCppAdapter:
                     return schema.model_validate_json(result)
                 except Exception as json_err:
                     # If JSON parsing fails, try to parse as plain text that might be JSON-like
-                    logger.debug(f"JSON parsing failed: {json_err}, trying dict conversion")
+                    logger.debug(
+                        f"JSON parsing failed: {json_err}, trying dict conversion"
+                    )
                     import json
+
                     parsed_dict = json.loads(result)
                     return schema.model_validate(parsed_dict)
-            
-            # Case 4: Dictionary - convert to Pydantic object  
+
+            # Case 4: Dictionary - convert to Pydantic object
             elif isinstance(result, dict):
                 logger.debug(f"Converting dictionary to {schema}")
                 return schema.model_validate(result)
-            
+
             # Case 5: Unknown type - provide detailed error
             else:
                 raise GenerationError(
                     f"Generator returned unexpected type {type(result)} (value: {result!r}). "
                     f"Expected {schema} or compatible format (str, dict, BaseModel)."
                 )
-                
+
         except Exception as e:
             logger.error(f"Failed to convert generator result to {schema}: {e}")
             raise GenerationError(
@@ -243,7 +267,7 @@ class LlamaCppAdapter:
 
             # Filter and prepare generation parameters
             filtered_kwargs = self._filter_generation_params(**generation_kwargs)
-            
+
             # Generate structured output
             logger.debug(f"Generating with prompt: {prompt[:100]}...")
             start_time = time.time()

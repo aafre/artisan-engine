@@ -11,18 +11,16 @@ import uuid
 from contextlib import asynccontextmanager
 from datetime import datetime
 
-from fastapi.params import Query
 import uvicorn
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.params import Query
 from fastapi.responses import JSONResponse
 
 from artisan_engine.adapter import LlamaCppAdapter
 from artisan_engine.config import find_model_file, get_config, setup_logging
 from artisan_engine.exceptions import (
     ArtisanEngineError,
-    ConfigurationError,
-    ModelNotLoadedError,
     ConfigurationError,
     GenerationError,
     ModelNotLoadedError,
@@ -66,7 +64,6 @@ async def lifespan(app: FastAPI):
     model_path = find_model_file()
     if not model_path:
         if config.require_model:
-            import sys
             error_msg = (
                 "ERROR: No model file found! To run Artisan Engine, you need to provide a model file.\n\n"
                 "For Docker containers:\n"
@@ -238,16 +235,14 @@ async def list_models(adapter: LlamaCppAdapter | None = Depends(get_adapter_opti
 
     if adapter:
         model_info = adapter.get_model_info()
-        serializable_params = {
-            key: str(value) for key, value in model_info.items()
-        }
+        serializable_params = {key: str(value) for key, value in model_info.items()}
         models.append(
             ModelInfo(
                 id="local-llm",
                 name="Local Language Model",
-                path=str(model_info.get("model_path")), # Ensure path is a string
+                path=str(model_info.get("model_path")),  # Ensure path is a string
                 loaded=model_info.get("is_loaded", False),
-                parameters=serializable_params, # Use the sanitized dictionary
+                parameters=serializable_params,  # Use the sanitized dictionary
             )
         )
 
@@ -320,7 +315,7 @@ async def generate_structured(
         )
 
     except Exception as e:
-        raise GenerationError(f"Generation failed: {e}")
+        raise GenerationError(f"Generation failed: {e}") from e
 
 
 @app.post("/v1/chat/completions", response_model=OpenAIChatResponse)

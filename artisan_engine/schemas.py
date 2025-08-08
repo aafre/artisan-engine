@@ -7,7 +7,7 @@ separate from the core API models.
 
 import hashlib
 import json
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel, Field, create_model
 
@@ -186,7 +186,7 @@ def create_schema_from_json_schema(json_schema: dict[str, Any]) -> type[BaseMode
 
         # Handle optional vs required fields
         if field_name not in required_fields:
-            python_type = Optional[python_type]
+            python_type = python_type | None
             default_value = None
         else:
             default_value = ...  # Required field marker
@@ -213,7 +213,9 @@ def create_schema_from_json_schema(json_schema: dict[str, Any]) -> type[BaseMode
         return dynamic_model
 
     except Exception as e:
-        raise ValueError(f"Failed to create Pydantic model from JSON Schema: {e}")
+        raise ValueError(
+            f"Failed to create Pydantic model from JSON Schema: {e}"
+        ) from e
 
 
 def find_or_create_schema(json_schema: dict[str, Any]) -> type[BaseModel]:

@@ -55,7 +55,9 @@ class Config(BaseSettings):
     environment: str = Field(default="development", description="Environment name")
     debug: bool = Field(default=False, description="Debug mode")
     version: str = Field(default="0.1.0", description="API version")
-    require_model: bool = Field(default=True, description="Require model file to be present at startup")
+    require_model: bool = Field(
+        default=True, description="Require model file to be present at startup"
+    )
 
     # Model configuration
     model: ModelConfig = Field(default_factory=ModelConfig)
@@ -111,7 +113,7 @@ def load_config() -> Config:
         # Load .env files (searches current dir and parents)
         # This loads variables into os.environ, which pydantic-settings then reads
         load_dotenv(verbose=False, override=False)
-        
+
         # Load base configuration (pydantic-settings will automatically read .env)
         config = Config()
 
@@ -150,6 +152,7 @@ def _apply_environment_overrides(config: Config) -> None:
             if "*" in str(path_pattern):
                 # Handle glob patterns
                 import glob
+
                 matches = glob.glob(str(path_pattern))
                 if matches:
                     config.model.path = Path(matches[0])  # Use first match
@@ -247,13 +250,14 @@ def get_model_paths() -> list[Path]:
 
     # Add common default paths
     import glob
+
     default_patterns = [
         "./models/*.gguf",  # Docker mount point
         "./local_llms/*.gguf",  # Development directory
         "./Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf",
         "./Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
     ]
-    
+
     default_paths = []
     for pattern in default_patterns:
         if "*" in str(pattern):
