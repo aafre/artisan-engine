@@ -1,19 +1,39 @@
 [project]
 name = "artisan-engine"
 version = "0.1.0"
-description = "A Production grade, OpenAI-compatible API layer for local LLMs"
+description = "A production-grade, OpenAI-compatible API layer for local LLMs with guaranteed structured output."
+license = "Apache-2.0"
 readme = "README.md"
 requires-python = ">=3.12"
+homepage = "https://github.com/aafre/artisan-engine"
+repository = "https://github.com/aafre/artisan-engine"
+
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
 dependencies = [
     "llama-cpp-python>=0.3.14",
     "numba>=0.61.2",
     "outlines>=1.2.1",
     "pydantic>=2.11.7",
+    "pydantic-settings>=2.0.0",
+    "fastapi>=0.115.0",
+    "uvicorn>=0.32.0",
+    "python-multipart>=0.0.12",
+    "httpx>=0.28.1",
+    "python-dotenv>=1.0.0",
+    "openai>=1.99.5",
 ]
 
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0.0",
+    "pytest-asyncio>=0.21.0",
+    "httpx>=0.24.0",
     "ruff>=0.7.0",
 ]
 
