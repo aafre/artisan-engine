@@ -5,13 +5,15 @@ This module handles environment-based configuration, providing defaults
 and validation for all configuration options.
 """
 
+import glob
 import logging
 import os
 from pathlib import Path
+from typing import Any
 
 from dotenv import load_dotenv
-from pydantic import BaseModel, Field
-from pydantic_settings import BaseSettings
+from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from .exceptions import ConfigurationError
 
@@ -26,6 +28,39 @@ class ModelConfig(BaseModel):
     temperature: float = Field(default=0.7, description="Default temperature")
     max_tokens: int = Field(default=200, description="Default max tokens")
 
+    @field_validator("lazy_loading", mode="before")
+    @classmethod
+    def parse_boolean_string(cls, v: Any) -> bool:
+        """Parse boolean strings from environment variables."""
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return v
+
+    @model_validator(mode="after")
+    def find_model_path_if_not_set(self) -> "ModelConfig":
+        """Find model path from default locations if not explicitly set."""
+        # Only search for default path if no environment variable was set
+        if self.path is None and not os.getenv("ARTISAN_MODEL_PATH"):
+            # Default model paths to check
+            default_paths = [
+                "./models/*.gguf",  # Docker mount point
+                "./local_llms/*.gguf",  # Development directory
+                "./Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf",
+                "./Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
+            ]
+            for path_pattern in default_paths:
+                if "*" in str(path_pattern):
+                    # Handle glob patterns
+                    matches = glob.glob(str(path_pattern))
+                    if matches:
+                        self.path = Path(matches[0])  # Use first match
+                        break
+                else:
+                    if Path(path_pattern).exists():
+                        self.path = Path(path_pattern)
+                        break
+        return self
+
 
 class ServerConfig(BaseModel):
     """Configuration for API server settings."""
@@ -35,6 +70,14 @@ class ServerConfig(BaseModel):
     workers: int = Field(default=1, description="Number of workers", ge=1)
     reload: bool = Field(default=False, description="Enable auto-reload")
     log_level: str = Field(default="info", description="Logging level")
+
+    @field_validator("reload", mode="before")
+    @classmethod
+    def parse_boolean_string(cls, v: Any) -> bool:
+        """Parse boolean strings from environment variables."""
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return v
 
 
 class CORSConfig(BaseModel):
@@ -47,6 +90,22 @@ class CORSConfig(BaseModel):
     )
     allow_headers: list[str] = Field(default=["*"], description="Allowed headers")
 
+    @field_validator("enabled", mode="before")
+    @classmethod
+    def parse_boolean_string(cls, v: Any) -> bool:
+        """Parse boolean strings from environment variables."""
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return v
+
+    @field_validator("allow_origins", "allow_methods", "allow_headers", mode="before")
+    @classmethod
+    def parse_comma_separated_strings(cls, v: Any) -> list[str]:
+        """Parse comma-separated strings from environment variables into lists."""
+        if isinstance(v, str):
+            return [item.strip() for item in v.split(",") if item.strip()]
+        return v
+
 
 class Config(BaseSettings):
     """Main configuration class using pydantic-settings."""
@@ -55,6 +114,91 @@ class Config(BaseSettings):
     environment: str = Field(default="development", description="Environment name")
     debug: bool = Field(default=False, description="Debug mode")
     version: str = Field(default="0.1.0", description="API version")
+
+    @field_validator("debug", mode="before")
+    @classmethod
+    def parse_debug_boolean(cls, v: Any) -> bool:
+        """Parse boolean strings from environment variables."""
+        if isinstance(v, str):
+            return v.lower() in ("true", "1", "yes", "on")
+        return v
+
+    @model_validator(mode="after")
+    def parse_nested_fields_from_env(self) -> "Config":
+        """Parse environment variables for nested models that pydantic-settings misses."""
+        # Model configuration
+        if model_path_str := os.getenv("ARTISAN_MODEL_PATH"):
+            self.model.path = Path(model_path_str) if model_path_str else None
+        if lazy_loading_str := os.getenv("ARTISAN_MODEL_LAZY_LOADING"):
+            self.model.lazy_loading = lazy_loading_str.lower() in (
+                "true",
+                "1",
+                "yes",
+                "on",
+            )
+        if n_ctx_str := os.getenv("ARTISAN_MODEL_N_CTX"):
+            try:
+                self.model.n_ctx = int(n_ctx_str)
+            except ValueError:
+                pass
+        if n_gpu_layers_str := os.getenv("ARTISAN_MODEL_N_GPU_LAYERS"):
+            try:
+                self.model.n_gpu_layers = int(n_gpu_layers_str)
+            except ValueError:
+                pass
+        if temperature_str := os.getenv("ARTISAN_MODEL_TEMPERATURE"):
+            try:
+                self.model.temperature = float(temperature_str)
+            except ValueError:
+                pass
+        if max_tokens_str := os.getenv("ARTISAN_MODEL_MAX_TOKENS"):
+            try:
+                self.model.max_tokens = int(max_tokens_str)
+            except ValueError:
+                pass
+
+        # Server configuration
+        if host_str := os.getenv("ARTISAN_SERVER_HOST"):
+            self.server.host = host_str
+        if port_str := os.getenv("ARTISAN_SERVER_PORT"):
+            try:
+                self.server.port = int(port_str)
+            except ValueError:
+                pass
+        if workers_str := os.getenv("ARTISAN_SERVER_WORKERS"):
+            try:
+                self.server.workers = int(workers_str)
+            except ValueError:
+                pass
+        if reload_str := os.getenv("ARTISAN_SERVER_RELOAD"):
+            self.server.reload = reload_str.lower() in ("true", "1", "yes", "on")
+        if log_level_str := os.getenv("ARTISAN_SERVER_LOG_LEVEL"):
+            self.server.log_level = log_level_str
+
+        # CORS configuration
+        if cors_enabled_str := os.getenv("ARTISAN_CORS_ENABLED"):
+            self.cors.enabled = cors_enabled_str.lower() in ("true", "1", "yes", "on")
+        if cors_origins_str := os.getenv("ARTISAN_CORS_ALLOW_ORIGINS"):
+            self.cors.allow_origins = [
+                item.strip() for item in cors_origins_str.split(",") if item.strip()
+            ]
+        if cors_methods_str := os.getenv("ARTISAN_CORS_ALLOW_METHODS"):
+            self.cors.allow_methods = [
+                item.strip() for item in cors_methods_str.split(",") if item.strip()
+            ]
+        if cors_headers_str := os.getenv("ARTISAN_CORS_ALLOW_HEADERS"):
+            self.cors.allow_headers = [
+                item.strip() for item in cors_headers_str.split(",") if item.strip()
+            ]
+
+        # Main level configuration
+        if version_str := os.getenv("ARTISAN_VERSION"):
+            self.version = version_str
+        if log_format_str := os.getenv("ARTISAN_LOG_FORMAT"):
+            self.log_format = log_format_str
+
+        return self
+
     require_model: bool = Field(
         default=True, description="Require model file to be present at startup"
     )
@@ -74,12 +218,14 @@ class Config(BaseSettings):
         description="Log format string",
     )
 
-    class Config:
-        env_prefix = "ARTISAN_"
-        env_nested_delimiter = "_"
-        case_sensitive = False
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+    model_config = SettingsConfigDict(
+        env_prefix="ARTISAN_",
+        env_nested_delimiter="_",
+        case_sensitive=False,
+        env_file=".env",
+        env_file_encoding="utf-8",
+        env_parse_none_str="null",
+    )
 
 
 # Global configuration instance
@@ -117,9 +263,6 @@ def load_config() -> Config:
         # Load base configuration (pydantic-settings will automatically read .env)
         config = Config()
 
-        # Override with environment-specific values
-        _apply_environment_overrides(config)
-
         # Validate configuration
         _validate_config(config)
 
@@ -127,59 +270,6 @@ def load_config() -> Config:
 
     except Exception as e:
         raise ConfigurationError(f"Failed to load configuration: {e}") from e
-
-
-def _apply_environment_overrides(config: Config) -> None:
-    """
-    Apply environment-specific configuration overrides.
-
-    Args:
-        config: Configuration instance to modify
-    """
-    # Model path from environment
-    model_path = os.getenv("ARTISAN_MODEL_PATH")
-    if model_path:
-        config.model.path = Path(model_path)
-    else:
-        # Default model paths to check
-        default_paths = [
-            "./models/*.gguf",  # Docker mount point
-            "./local_llms/*.gguf",  # Development directory
-            "./Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf",
-            "./Mistral-7B-Instruct-v0.3-Q4_K_M.gguf",
-        ]
-        for path_pattern in default_paths:
-            if "*" in str(path_pattern):
-                # Handle glob patterns
-                import glob
-
-                matches = glob.glob(str(path_pattern))
-                if matches:
-                    config.model.path = Path(matches[0])  # Use first match
-                    break
-            else:
-                if Path(path_pattern).exists():
-                    config.model.path = Path(path_pattern)
-                    break
-
-    # Server configuration from environment
-    if host := os.getenv("ARTISAN_SERVER_HOST"):
-        config.server.host = host
-
-    if port := os.getenv("ARTISAN_SERVER_PORT"):
-        try:
-            config.server.port = int(port)
-        except ValueError:
-            pass  # Use default
-
-    # Debug mode
-    if os.getenv("ARTISAN_DEBUG", "").lower() in ("true", "1", "yes"):
-        config.debug = True
-        config.server.log_level = "debug"
-
-    # Environment
-    if env := os.getenv("ARTISAN_ENVIRONMENT"):
-        config.environment = env
 
 
 def _validate_config(config: Config) -> None:

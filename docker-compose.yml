@@ -1,0 +1,41 @@
+# docker-compose.yml (Corrected)
+
+services:
+  artisan-engine:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      ARTISAN_MODEL_PATH: "/app/models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf"
+      ARTISAN_MODEL_LAZY_LOADING: "false"
+      ARTISAN_REQUIRE_MODEL: "true"
+    volumes:
+      - model_cache:/app/models
+    depends_on:
+      model-downloader:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  model-downloader:
+    image: curlimages/curl:latest
+    user: root
+    volumes:
+      - model_cache:/app/models
+    # THE FIX: Corrected URL and removed unnecessary backslashes
+    command: >
+      sh -c "
+        MODEL_FILE='/app/models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf'
+        MODEL_URL='https://huggingface.co/QuantFactory/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf'
+        if [ ! -f \"$$MODEL_FILE\" ]; then
+          echo \"Model not found. Downloading... (This may take several minutes)\"
+          curl -L $$MODEL_URL -o $$MODEL_FILE
+          echo \"Download complete.\"
+        else
+          echo \"Model already exists. Skipping download.\"
+        fi
+      "
+
+volumes:
+  model_cache:
