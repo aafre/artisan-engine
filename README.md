@@ -3,7 +3,7 @@
 **A production-grade, OpenAI-compatible API layer for local LLMs with guaranteed structured output.**
 
 [![CI](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml)
-[![PyPI version](https://badge.fury.io/py/artisan-engine.svg)](https://badge.fury.io/py/artisan-engine)
+[![PyPI version](https://img.shields.io/pypi/v/artisan-engine)](https://pypi.org/project/artisan-engine/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
 ## Mission
