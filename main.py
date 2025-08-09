@@ -8,6 +8,7 @@ using local language models with guaranteed JSON output.
 import logging
 import time
 import uuid
+import tomllib
 from contextlib import asynccontextmanager
 from datetime import datetime
 
@@ -16,6 +17,8 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.params import Query
 from fastapi.responses import JSONResponse
+from pathlib import Path
+ 
 
 from artisan_engine.adapter import LlamaCppAdapter
 from artisan_engine.config import find_model_file, get_config, setup_logging
@@ -37,6 +40,7 @@ from artisan_engine.models import (
     OpenAIChatResponse,
     OpenAIChoice,
     OpenAIMessage,
+    VersionResponse
 )
 from artisan_engine.schemas import (
     find_or_create_schema,
@@ -222,6 +226,11 @@ async def health_check(
         model_status=model_status if include_details else None,
         uptime=time.time() - start_time,
     )
+
+
+@app.get("/version", response_model=VersionResponse)
+def get_version():
+    return VersionResponse(version=config.version)
 
 
 @app.get("/models", response_model=ModelsResponse)
