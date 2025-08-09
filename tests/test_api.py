@@ -333,3 +333,15 @@ class TestRequestValidation:
         }
         response = client.post("/generate", json=request_data)
         assert response.status_code == 422
+
+    
+    
+def test_get_version(client):
+    response = client.get("/version")
+    assert response.status_code == 200
+    json_data = response.json()
+    assert "version" in json_data
+    assert isinstance(json_data["version"], str)
+
+
+

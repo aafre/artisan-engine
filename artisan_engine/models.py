@@ -195,3 +195,10 @@ class ErrorResponse(BaseModel):
         default=None, description="Additional error details"
     )
     timestamp: str = Field(description="Error timestamp")
+
+
+class VersionResponse(BaseModel):
+    version: str
+
+
+
