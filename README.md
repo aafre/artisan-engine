@@ -1,4 +1,3 @@
-readme_content = """
 # Artisan Engine 🎨
 
 **A production-grade, OpenAI-compatible API layer for local LLMs with guaranteed structured output.**
@@ -163,5 +162,3 @@ poetry run artisan serve --reload
 ### Contributing
 
 Contributions are welcome! We have several issues flagged as `good first issue` that are perfect for getting started. Please see the [Issues Tab](https://github.com/aafre/artisan-engine/issues) to get involved.
-
-"""
