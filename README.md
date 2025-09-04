@@ -1,10 +1,11 @@
-# Artisan Engine
+readme_content = """
+# Artisan Engine 🎨
 
 **A production-grade, OpenAI-compatible API layer for local LLMs with guaranteed structured output.**
 
 [![CI](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml)
 [![PyPI version](https://badge.fury.io/py/artisan-engine.svg)](https://badge.fury.io/py/artisan-engine)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
+[![Docker Image](https://ghcr-badge.egpl.dev/aafre/artisan-engine/size)](https://github.com/aafre/artisan-engine/pkgs/container/artisan-engine)
 
 ## Mission
 
@@ -12,37 +13,115 @@ The goal of Artisan Engine is to bridge the last-mile gap between powerful open-
 
 ---
 
-### Project Status & Roadmap
-
-Artisan Engine is currently in its initial `v0.1.0` release. The core focus of this version is to deliver a rock-solid, OpenAI-compatible endpoint for **guaranteed structured output**.
-
-Our future roadmap is focused on building a complete, stateful application platform:
-
-* [ ] **Full Function Calling / Tool Use:** Complete orchestration for multi-step agentic workflows.
-* [ ] **The Assistants API:** A stateful, persistent API for managing long-running conversations with memory.
-* [ ] **Integrated RAG:** Seamlessly connect your private documents to your local models.
-* [ ] **Expanded Backend Support:** Official adapters for Ollama, vLLM, and other popular model servers.
-
-We are actively looking for contributors to help us build this future. See the "Contributing" section below!
-
----
-
 ### Key Features
 
 * **Guaranteed Structured Output:** Don't just *prompt* for JSON, *enforce* it. Artisan uses grammar-based sampling to guarantee that the model's output will always be a syntactically correct JSON object that validates against your Pydantic schema.
 * **OpenAI Compatibility:** Use the official `openai` client library you already know. Just change the `base_url`, and your existing code works.
-* **One-Command Deploy:** A single `docker-compose up` command downloads the model and starts the server.
-* **Language Agnostic:** Any service that can make an HTTP request (NodeJS, Go, Rust, Java, etc.) can use Artisan's power.
+* **Simple Deployment:** Get up and running with a single `docker run` command or `pip install`.
+* **Language Agnostic:** Any service that can make an HTTP request can use Artisan's power.
 
 ---
 
-### Quick Start (with Docker Compose)
+### Installation & Usage
 
-Get the entire engine running with a single command. This is the easiest and recommended way to get started.
+There are three ways to get started with Artisan Engine.
+
+<details>
+<summary><strong>🐳 Option 1: Docker (Recommended)</strong></summary>
+
+This is the easiest and recommended way to run Artisan Engine. It uses the pre-built image from the GitHub Container Registry.
 
 **Prerequisites:**
-* Docker and Docker Compose installed.
-* Git installed.
+* Docker installed.
+* A GGUF-format model file downloaded to your machine.
+
+**1. Prepare Your Model Directory**
+
+Create a directory on your computer and place your downloaded `.gguf` model file inside it.
+
+For example, you can use: [Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf](https://huggingface.co/QuantFactory/Meta-Llama-3.1-8B-Instruct-GGUF/resolve/main/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf). 
+
+```bash
+# For example:
+mkdir my-local-model
+mv ~/Downloads/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf ./my-local-model/
+```
+
+**2. Run the Artisan Engine Container**
+
+This command will pull the latest image and start the server.
+
+* **For Linux/macOS:**
+    ```bash
+    docker run -d --rm \
+      -p 8000:8000 \
+      -v "$(pwd)/my-local-model:/app/models" \
+      -e ARTISAN_MODEL_PATH="/app/models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf" \
+      --name artisan-engine \
+      ghcr.io/aafre/artisan-engine:latest
+    ```
+
+* **For Windows (PowerShell):**
+    ```powershell
+    docker run -d --rm `
+      --gpus all `
+      -p 8000:8000 `
+      -v ${PWD}/my-local-model:/app/models `
+      -e ARTISAN_MODEL_PATH="/app/models/Meta-Llama-3.1-8B-Instruct.Q4_K_M.gguf" `
+      -e ARTISAN_MODEL_LAZY_LOADING="false" `
+      --name artisan-engine `
+      ghcr.io/aafre/artisan-engine:latest
+    ```
+
+> **Note:** Replace `my-local-model` with the path to your model. 
+
+The server will now be running at `http://localhost:8000`.
+
+</details>
+
+<details>
+<summary><strong>🐍 Option 2: From PyPI (with pip)</strong></summary>
+
+This method is for running the server directly on your machine without Docker.
+
+**Prerequisites:**
+* Python 3.12+ installed.
+* A GGUF-format model file downloaded to your machine.
+
+**1. Install the package:**
+```bash
+pip install artisan-engine
+```
+
+**2. Set the Model Path Environment Variable**
+
+Artisan Engine needs to know where to find your model file.
+
+* **For Linux/macOS:**
+    ```bash
+    export ARTISAN_MODEL_PATH="/path/to/your/model.gguf"
+    ```
+
+* **For Windows (PowerShell):**
+    ```powershell
+    $env:ARTISAN_MODEL_PATH = "C:\\path\\to\\your\\model.gguf"
+    ```
+
+**3. Run the Server**
+
+Use the built-in CLI to start the server.
+```bash
+artisan serve
+```
+
+The server will now be running at `http://localhost:8000`.
+
+</details>
+
+<details>
+<summary><strong>🧑‍💻 Option 3: From Source (for Developers)</strong></summary>
+
+This method is for developers who want to contribute to Artisan Engine.
 
 **1. Clone the repository:**
 ```bash
@@ -50,96 +129,39 @@ git clone [https://github.com/aafre/artisan-engine.git](https://github.com/aafre
 cd artisan-engine
 ```
 
-**2. Start the services:**
-This single command will take care of everything:
-* Build the Artisan Engine image.
-* **Automatically download a default LLM model** (`Llama-3.1-8B-Instruct`) if you don't have it.
-* Start the Artisan API server.
-
+**2. Install Dependencies:**
+We recommend using [Poetry](https://python-poetry.org/) for managing dependencies.
 ```bash
-docker-compose up -d
-```
-> **Note:** The first time you run this, it may take several minutes to download the multi-gigabyte model file. On subsequent runs, it will start instantly as the model is cached in a Docker volume.
-
-The server will be available at `http://localhost:8000`.
-
-**3. Test with Python (OpenAI Client)**
-
-Once the server is running, you can verify everything is working with this script.
-
-First, install the `openai` library: `pip install openai pydantic`
-
-```python
-import openai
-from pydantic import BaseModel, Field
-
-# 1. Define your desired Pydantic schema
-class UserProfile(BaseModel):
-    name: str = Field(description="The user's full name")
-    age: int = Field(description="The user's age in years")
-
-# 2. Point the OpenAI client to your local Artisan server
-client = openai.OpenAI(
-    base_url="http://localhost:8000/v1",
-    api_key="not-needed"
-)
-
-# 3. Make the API call with the schema
-response = client.chat.completions.create(
-    model="local-llm",
-    messages=[
-        {"role": "user", "content": "Extract data for John Doe, who is 42 years old."}
-    ],
-    response_format={
-        "type": "json_object",
-        "json_schema": UserProfile.model_json_schema()
-    }
-)
-
-# 4. The result is a guaranteed valid JSON string
-json_response = response.choices[0].message.content
-print("Raw JSON from server:", json_response)
-
-# 5. You can load it directly into your Pydantic model
-user = UserProfile.model_validate_json(json_response)
-print(f"\\nSuccessfully validated object: {user}")
+poetry install
 ```
 
----
+**3. Configure Your Model:**
+Copy the example environment file and edit it to point to your model.
+```bash
+cp .env.example .env
+# Now, edit the .env file and set ARTISAN_MODEL_PATH
+```
 
-### Usage Examples
-
-The `examples/` directory in this repository contains more runnable scripts that demonstrate how to use the Artisan Engine for common tasks.
-
----
-
-### Configuration
-
-Artisan Engine is configured via environment variables. The easiest way to configure the `docker-compose` setup is to edit the `environment` section for the `artisan-engine` service directly in the `docker-compose.yml` file.
-
-For a full list of configuration options, please see the `.env.example` file.
-
----
-
-### Endpoints
-
-* `/docs`: Interactive API documentation (Swagger UI).
-* `/health`: Health check for the service and model.
-* `/models`: Lists the available models (OpenAI-compatible).
-* `/v1/chat/completions`: The OpenAI-compatible endpoint for structured and unstructured chat.
+**4. Run the Development Server:**
+Use the CLI to start the server with auto-reloading.
+```bash
+poetry run artisan serve --reload
+```
+</details>
 
 ---
 
-### Powered By
+### Project Status & Roadmap
 
-Artisan Engine stands on the shoulders of giants. Our core functionality is made possible by these fantastic open-source projects:
-
-* **[Outlines](https://github.com/dottxt-ai/outlines):** For the state-of-the-art, grammar-based generation that guarantees our structured output.
-* **[llama-cpp-python](https://github.com/abetlen/llama-cpp-python):** For high-performance inference of GGUF models on local hardware.
-* **[FastAPI](https://fastapi.tiangolo.com/):** For building our robust and modern API.
+* [x] **v0.1.0: Guaranteed Structured Output**
+* [ ] **v0.2.0: Full Function Calling / Tool Use**
+* [ ] **v0.3.0: The Assistants API (Stateful Conversations)**
+* [ ] **Future:** Integrated RAG, Expanded Backend Support (Ollama, vLLM)
 
 ---
 
 ### Contributing
 
-Contributions are welcome and essential for making Artisan Engine the best tool for local AI development! We have several issues flagged as `good first issue` that are perfect for getting started. Please see the [issues tab](https://github.com/aafre/artisan-engine/issues) to get involved.
+Contributions are welcome! We have several issues flagged as `good first issue` that are perfect for getting started. Please see the [Issues Tab](https://github.com/aafre/artisan-engine/issues) to get involved.
+
+"""
