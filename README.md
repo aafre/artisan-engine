@@ -3,8 +3,8 @@
 **A production-grade, OpenAI-compatible API layer for local LLMs with guaranteed structured output.**
 
 [![CI](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml)
-[![PyPI version](https://badge.fury.io/py/artisan-engine.svg)](https://badge.fury.io/py/artisan-engine)
-[![Docker Image](https://ghcr-badge.egpl.dev/aafre/artisan-engine/size)](https://github.com/aafre/artisan-engine/pkgs/container/artisan-engine)
+[![PyPI version](https://img.shields.io/pypi/v/artisan-engine)](https://pypi.org/project/artisan-engine/)
+[![Docker Image](https://ghcr-badge.egpl.dev/aafre/artisan-engine/)](https://github.com/aafre/artisan-engine/pkgs/container/artisan-engine)
 
 ## Mission
 
@@ -162,3 +162,4 @@ artisan serve
 ### Contributing
 
 Contributions are welcome! We have several issues flagged as `good first issue` that are perfect for getting started. Please see the [Issues Tab](https://github.com/aafre/artisan-engine/issues) to get involved.
+
