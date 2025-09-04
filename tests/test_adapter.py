@@ -270,3 +270,67 @@ class TestLlamaCppAdapter:
         assert info["n_ctx_configured"] == 4096  # What we configured
         assert info["n_ctx_actual"] == 4096  # What the model actually uses
         assert info["n_vocab"] == 32000
+
+
+class TestAdapterErrorHandling:
+    """Test essential error handling scenarios."""
+
+    @patch("artisan_engine.adapter.outlines.Generator")
+    def test_generation_parameter_filtering(self, mock_generator_class):
+        """Test that invalid generation parameters are filtered."""
+        adapter = LlamaCppAdapter()
+        adapter._outlines_model = Mock()
+        adapter._is_loaded = True
+
+        mock_generator = Mock()
+        mock_generator.return_value = TestUser(name="Test", age=30)
+        mock_generator_class.return_value = mock_generator
+
+        # Include both valid and invalid parameters
+        adapter.generate_structured(
+            "test prompt",
+            TestUser,
+            max_tokens=100,  # Valid
+            temperature=0.8,  # Valid
+            invalid_param="should_be_filtered",  # Invalid
+            top_k=40  # Valid
+        )
+
+        # Check that only valid params were passed to generator
+        call_args = mock_generator.call_args
+        assert "max_tokens" in call_args[1]
+        assert "temperature" in call_args[1]
+        assert "top_k" in call_args[1]
+        assert "invalid_param" not in call_args[1]
+
+    @patch("pathlib.Path.exists")
+    def test_model_loading_with_insufficient_memory(self, mock_exists):
+        """Test model loading failure due to memory issues."""
+        mock_exists.return_value = True
+
+        with patch("artisan_engine.adapter.Llama") as mock_llama:
+            mock_llama.side_effect = MemoryError("Insufficient memory")
+
+            adapter = LlamaCppAdapter(model_path="/test/model.gguf")
+
+            with pytest.raises(GenerationError, match="Model loading failed"):
+                adapter.load_model()
+
+            assert not adapter.is_loaded()
+
+
+class TestAdapterHealthMonitoring:
+    """Test adapter health monitoring capabilities."""
+
+    def test_health_check_basic(self):
+        """Test basic health check functionality."""
+        adapter = LlamaCppAdapter()
+        adapter._is_loaded = True
+        adapter._outlines_model = Mock()
+
+        health = adapter.health_check()
+
+        assert "model_loaded" in health
+        assert "generators_cached" in health
+        assert "lazy_loading" in health
+        assert "n_ctx" in health
