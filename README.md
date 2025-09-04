@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml/badge.svg)](https://github.com/aafre/artisan-engine/actions/workflows/ci.yml)
 [![PyPI version](https://img.shields.io/pypi/v/artisan-engine)](https://pypi.org/project/artisan-engine/)
-[![Docker Image](https://ghcr-badge.egpl.dev/aafre/artisan-engine/)](https://github.com/aafre/artisan-engine/pkgs/container/artisan-engine)
+[![Docker Image](https://ghcr-badge.egpl.dev/aafre/artisan-engine/size)](https://github.com/aafre/artisan-engine/pkgs/container/artisan-engine)
 
 ## Mission
 
