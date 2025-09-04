@@ -124,14 +124,14 @@ This method is for developers who want to contribute to Artisan Engine.
 
 **1. Clone the repository:**
 ```bash
-git clone [https://github.com/aafre/artisan-engine.git](https://github.com/aafre/artisan-engine.git)
+git clone https://github.com/aafre/artisan-engine.git
 cd artisan-engine
 ```
 
 **2. Install Dependencies:**
-We recommend using [Poetry](https://python-poetry.org/) for managing dependencies.
+We recommend using [uv](https://docs.astral.sh/) for managing dependencies.
 ```bash
-poetry install
+uv sync
 ```
 
 **3. Configure Your Model:**
@@ -142,9 +142,9 @@ cp .env.example .env
 ```
 
 **4. Run the Development Server:**
-Use the CLI to start the server with auto-reloading.
+Use the CLI to start the server
 ```bash
-poetry run artisan serve --reload
+artisan serve
 ```
 </details>
 
